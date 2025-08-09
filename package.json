@@ -1,0 +1,81 @@
+{
+	"name": "directus-brazilian-pix",
+	"version": "1.0.1",
+	"description": "Brazilian PIX key extensions for Directus - Complete PIX key input with type selection and validation (CPF, CNPJ, Phone, Email)",
+	"keywords": [
+		"directus",
+		"directus-extension",
+		"directus-marketplace",
+		"brazil",
+		"brazilian",
+		"brasil",
+		"pix",
+		"payment",
+		"cpf",
+		"cnpj",
+		"email",
+		"phone",
+		"mobile",
+		"key",
+		"validation",
+		"formatting",
+		"interface",
+		"display"
+	],
+	"author": {
+		"name": "Bruno Ribeiro",
+		"email": "bruno@renovando-directus.com",
+		"url": "https://github.com/brunribeiro"
+	},
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/brunribeiro/directus-brazilian-pix"
+	},
+	"homepage": "https://github.com/brunribeiro/directus-brazilian-pix#readme",
+	"bugs": {
+		"url": "https://github.com/brunribeiro/directus-brazilian-pix/issues"
+	},
+	"type": "module",
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"directus:extension": {
+		"type": "bundle",
+		"path": {
+			"app": "dist/app.js",
+			"api": "dist/api.js"
+		},
+		"entries": [
+			{
+				"type": "interface",
+				"name": "brazilian-pix-key",
+				"source": "src/interfaces/pix-key/index.ts"
+			},
+			{
+				"type": "display",
+				"name": "brazilian-pix-key-display",
+				"source": "src/displays/pix-key/index.ts"
+			}
+		],
+		"host": "^10.0.0"
+	},
+	"scripts": {
+		"build": "directus-extension build",
+		"dev": "directus-extension build -w --no-minify",
+		"link": "directus-extension link",
+		"validate": "directus-extension validate",
+		"prepublishOnly": "npm run build"
+	},
+	"devDependencies": {
+		"@directus/extensions-sdk": "13.1.1"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+} 
