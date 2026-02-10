@@ -1,6 +1,6 @@
 {
 	"name": "directus-brazilian-pix",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"description": "Brazilian PIX key extensions for Directus - Complete PIX key input with type selection and validation (CPF, CNPJ, Phone, Email)",
 	"keywords": [
 		"directus",
