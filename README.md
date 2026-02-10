@@ -1,211 +1,128 @@
-# Brazilian PIX Key Extension for Directus
+# Extensão de Chave PIX Brasileira para Directus
 
-A comprehensive Directus extension bundle for handling Brazilian PIX keys with validation, formatting, and beautiful displays. This extension provides both an interface for data input and a display for presenting PIX keys throughout your Directus application.
+Extensão bundle para Directus focada na comunidade brasileira, com interface de entrada e display para chaves PIX com validação, formatação e experiência de uso otimizada.
 
-## 🚀 Features
+## O que esta extensão faz
 
-### PIX Key Interface Component
-The interface component provides a complete PIX key input experience with:
+### Interface de Chave PIX
 
-- **Multi-type Support**: Full support for all Brazilian PIX key types:
-  - CPF (Individual taxpayer ID) with official algorithm validation
-  - CNPJ (Company taxpayer ID) with official algorithm validation
-  - Phone numbers (landline and mobile, with optional +55 country code) with area code validation
-  - Email addresses with standard format validation
-  - EVP random keys (UUID format)
+- Suporte completo aos tipos de chave:
+  - CPF
+  - CNPJ
+  - Telefone (com ou sem +55)
+  - E-mail
+  - EVP (chave aleatória em formato UUID)
+- Detecção automática do tipo da chave
+- Validação em tempo real por tipo
+- Formatação automática durante digitação
+- Seletor de tipo configurável
+- Armazenamento estruturado com `key` e `type`
 
-- **Smart Auto-detection**: Automatically detects PIX key type based on input patterns
-  - CPF: 11 digits
-  - CNPJ: 14 digits
-  - Phone: 10-11 digits (or +55 prefixed) with area code recognition
-  - Email: Standard email format
-  - EVP: UUID format
+### Display de Chave PIX
 
-- **Real-time Validation**: 
-  - Validates CPF using official Brazilian algorithm (mod 11 check digits)
-  - Validates CNPJ using official Brazilian algorithm
-  - Validates phone numbers against all valid Brazilian area codes
-  - Validates email format with regex pattern
-  - Validates EVP random keys with UUID format validation
-  - Shows instant feedback with success/error indicators
+- Exibição formatada por tipo
+- Ícone do tipo de chave (opcional)
+- Cópia para área de transferência com feedback visual
+- Máscara parcial para CPF/CNPJ (opcional)
+- Compatibilidade com valores antigos (string simples) e novos (JSON)
 
-- **Intelligent Formatting**: 
-  - CPF: Formats as XXX.XXX.XXX-XX as you type
-  - CNPJ: Formats as XX.XXX.XXX/XXXX-XX as you type
-  - Phone: Formats as +55 (XX) XXXXX-XXXX or (XX) XXXX-XXXX
-  - Email: Automatically lowercases and trims whitespace
-  - EVP: Lowercases and trims whitespace
-  - Restricts input to numbers only for CPF/CNPJ/Phone
+## Instalação
 
-- **Type Selection Dropdown**: 
-  - Visual dropdown with icons for each PIX key type
-  - Manual type override capability
-  - Configurable allowed types restriction
+### Via npm
 
-- **Input Features**:
-  - Keyboard restrictions for numeric-only types
-  - Max length enforcement per type
-  - Copy/paste support with automatic formatting
-  - Blur event validation
-  - Visual feedback with icons and messages
-
-### PIX Key Display Component
-The display component provides rich visualization features:
-
-- **Type Identification**: 
-  - Automatic type detection from stored data
-  - Visual type icons (person for CPF, business for CNPJ, etc.)
-  - Support for both JSON and plain string storage formats
-
-- **Copy to Clipboard**: 
-  - One-click copying with visual feedback
-  - Animated success notification
-  - Fallback for older browsers
-  - Copies unformatted key value
-
-- **Privacy Features**: 
-  - Optional masking for sensitive data
-  - CPF: Masks as ***.***.***-XX
-  - CNPJ: Masks as **.***.***/****-XX
-  - Configurable per display instance
-
-- **QR Code Support**: 
-  - QR code generation button (placeholder for future implementation)
-  - Modal dialog for QR code display
-  - Shows formatted PIX key value
-
-- **Responsive Design**: 
-  - Adapts to different screen sizes
-  - Mobile-optimized layout
-  - Flexible container widths
-
-## 📦 Installation
-
-### From NPM (Recommended)
 ```bash
 npm install directus-brazilian-pix
 ```
 
-### Manual Installation
-1. Download the latest release
-2. Extract to your Directus extensions folder
-3. Restart your Directus instance
+### Instalação manual
 
-## 🔧 Usage
+1. Baixe a release mais recente.
+2. Extraia para a pasta de extensões do Directus.
+3. Reinicie sua instância do Directus.
 
-### Interface Configuration
+## Uso
 
-Add the Brazilian PIX Key interface to any string field:
+### Configurando a interface
 
-1. Go to Settings > Data Model
-2. Select your collection and field
-3. Choose "Brazilian PIX Key" as the interface
-4. Configure the options as needed
+1. Acesse `Settings > Data Model`.
+2. Selecione a coleção e o campo (tipo string).
+3. Escolha a interface `Brazilian PIX Key`.
+4. Ajuste as opções conforme necessário.
 
-#### Interface Options
+#### Opções da interface
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| **Placeholder** | String | `Digite ou cole sua chave PIX` | Custom placeholder text for the input field |
-| **Disabled** | Boolean | `false` | Disable the input field |
-| **Required** | Boolean | `false` | Make the field required with validation message |
-| **Auto-detect PIX Key Type** | Boolean | `true` | Automatically detect PIX key type based on input format |
-| **Allowed PIX Key Types** | Array | All types | Restrict which PIX key types are allowed (CPF, CNPJ, Phone, Email, EVP) |
-| **Default PIX Key Type** | String | `cpf` | Default type when creating new items |
-| **Show Type Selector** | Boolean | `true` | Show/hide the type selector dropdown |
-| **Validate Key Format** | Boolean | `true` | Enable validation using official Brazilian algorithms |
+| Opção | Tipo | Padrão | Descrição |
+|------|------|--------|-----------|
+| Placeholder | String | `Digite ou cole sua chave PIX` | Placeholder do input |
+| Disabled | Boolean | `false` | Desabilita o campo |
+| Required | Boolean | `false` | Torna o campo obrigatório |
+| Auto-detect PIX Key Type | Boolean | `true` | Detecta automaticamente o tipo da chave |
+| Allowed PIX Key Types | Array | Todos | Restringe tipos permitidos (`cpf`, `cnpj`, `phone`, `email`, `evp`) |
+| Default PIX Key Type | String | `cpf` | Tipo padrão ao criar novo item |
+| Show Type Selector | Boolean | `true` | Mostra/oculta seletor de tipo |
+| Validate Key Format | Boolean | `true` | Ativa/desativa validação por tipo |
 
-### Display Configuration
+### Configurando o display
 
-Configure the display to show PIX keys with type badges:
+1. Abra o layout da coleção.
+2. Selecione o campo da chave PIX.
+3. Escolha o display `Brazilian PIX Key Display`.
+4. Ajuste as opções.
 
-1. Go to your collection layout
-2. Select the PIX key field
-3. Choose "Brazilian PIX Key Display" as the display
-4. Configure the display options
+#### Opções do display
 
-#### Display Options
+| Opção | Tipo | Padrão | Descrição |
+|------|------|--------|-----------|
+| Show Type Badge | Boolean | `true` | Exibe ícone do tipo de chave |
+| Format Key | Boolean | `true` | Aplica formatação visual |
+| Hide Partial Key | Boolean | `false` | Mascara parcialmente CPF/CNPJ |
+| Enable Copy to Clipboard | Boolean | `true` | Permite copiar a chave ao clicar |
+| Show QR Code Option | Boolean | `false` | Exibe botão para modal de QR Code (placeholder) |
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| **Show Type Badge** | Boolean | `true` | Display a type icon showing the PIX key type (CPF, CNPJ, Phone, Email, EVP) |
-| **Format Key** | Boolean | `true` | Apply proper Brazilian formatting to CPF, CNPJ, and phone numbers |
-| **Hide Partial Key** | Boolean | `false` | Mask part of the key for privacy (CPF and CNPJ only) |
-| **Enable Copy to Clipboard** | Boolean | `true` | Allow users to copy the PIX key by clicking with visual feedback |
-| **Show QR Code Option** | Boolean | `false` | Show a button to generate QR code for the PIX key |
+## Tipos de chave suportados
 
-## 📋 PIX Key Types
+| Tipo | Descrição | Exemplo |
+|------|-----------|---------|
+| CPF | Pessoa física | `123.456.789-01` |
+| CNPJ | Pessoa jurídica | `12.345.678/0001-90` |
+| Telefone | Celular/fixo | `+55 (11) 99999-9999` |
+| E-mail | Endereço de e-mail | `usuario@email.com` |
+| EVP | Chave aleatória (UUID) | `123e4567-e89b-12d3-a456-426614174000` |
 
-### Supported Types
+## Regras de validação
 
-| Type | Description | Format | Example |
-|------|-------------|--------|---------|
-| **CPF** | Individual taxpayer ID | XXX.XXX.XXX-XX | 123.456.789-01 |
-| **CNPJ** | Company taxpayer ID | XX.XXX.XXX/XXXX-XX | 12.345.678/0001-90 |
-| **Phone** | Mobile/landline number | +55 (XX) XXXXX-XXXX | +55 (11) 99999-9999 |
-| **Email** | Email address | user@domain.com | usuario@email.com |
-| **EVP** | Random PIX key | UUID | 123e4567-e89b-12d3-a456-426614174000 |
+### CPF
 
-### Validation Rules
+- Valida os 11 dígitos
+- Rejeita sequências repetidas
+- Calcula e valida os dois dígitos verificadores
 
-#### CPF Validation
-- Uses the official Brazilian CPF algorithm (mod 11 check digits)
-- Validates that all 11 digits aren't the same
-- Calculates and verifies both check digits
-- Automatically formats as XXX.XXX.XXX-XX
+### CNPJ
 
-#### CNPJ Validation
-- Uses the official Brazilian CNPJ algorithm
-- Validates that all 14 digits aren't the same
-- Calculates and verifies both check digits
-- Automatically formats as XX.XXX.XXX/XXXX-XX
+- Valida os 14 dígitos
+- Rejeita sequências repetidas
+- Calcula e valida os dois dígitos verificadores
 
-#### Phone Validation
-- Validates against all 67 valid Brazilian area codes
-- Supports both mobile (11 digits) and landline (10 digits) formats, with optional +55 prefix
-- Mobile numbers must have 9 as the 3rd digit (after area code)
-- Automatically formats as +55 (XX) XXXXX-XXXX or (XX) XXXX-XXXX
+### Telefone
 
-#### Email Validation
-- Standard email format validation using regex
-- Automatically lowercases and trims whitespace
-- Maximum length of 254 characters (RFC standard)
+- Aceita números nacionais com 10 ou 11 dígitos
+- Aceita prefixo `55` (país)
+- Valida DDD brasileiro
+- Para 11 dígitos, exige `9` como terceiro dígito
 
-#### EVP Validation
-- Validates random PIX keys in UUID format
-- Automatically lowercases and trims whitespace
+### E-mail
 
-## 🎨 Styling & UI Features
+- Validação de formato via regex
+- Normalização para minúsculas e trim
 
-The extension uses Directus design tokens and follows the system theme automatically.
+### EVP
 
-### Visual Elements
+- Validação de UUID (versões 1-5)
+- Normalização para minúsculas e trim
 
-#### Icons by Type
-- **CPF**: Person icon (`person`)
-- **CNPJ**: Business icon (`business`)
-- **Phone**: Phone icon (`phone`)
-- **Email**: Email icon (`email`)
-- **EVP**: Key icon (`key`)
-- **Default**: QR Code icon (`qr_code`)
+## Formato de armazenamento
 
-#### Interactive Features
-- **Success Indicator**: Green checkmark when validation passes
-- **Error Indicator**: Red error icon with descriptive message
-- **Auto-detect Indicator**: Shows when type is automatically detected
-- **Copy Animation**: Smooth fade-in/out animation on successful copy
-- **Loading State**: Hourglass icon during copy operation
-
-#### Responsive Behavior
-- **Desktop**: Side-by-side layout for type selector and input
-- **Mobile**: Stacked vertical layout below 600px width
-- **Flexible Width**: Components adapt to container width
-
-## 📊 Data Storage
-
-### Storage Format
-
-PIX keys are stored as JSON strings containing both the key and its type:
+As chaves são salvas como string JSON:
 
 ```json
 {
@@ -214,135 +131,90 @@ PIX keys are stored as JSON strings containing both the key and its type:
 }
 ```
 
-### Benefits of JSON Storage
-- **Type Preservation**: Maintains the PIX key type for proper validation
-- **Clean Values**: Stores unformatted values (numbers only for CPF/CNPJ/Phone)
-- **Backward Compatibility**: Display component can auto-detect type from plain strings
-- **Flexibility**: Easily extendable for future PIX key types
-
-### Data Examples
+### Exemplos
 
 ```json
-// CPF
-{"key": "12345678901", "type": "cpf"}
-
-// CNPJ
-{"key": "12345678000190", "type": "cnpj"}
-
-// Phone
-{"key": "5511999999999", "type": "phone"}
-
-// Email
-{"key": "user@example.com", "type": "email"}
-
-// EVP
-{"key": "123e4567-e89b-12d3-a456-426614174000", "type": "evp"}
+{"key":"12345678901","type":"cpf"}
+{"key":"12345678000190","type":"cnpj"}
+{"key":"5511999999999","type":"phone"}
+{"key":"user@example.com","type":"email"}
+{"key":"123e4567-e89b-12d3-a456-426614174000","type":"evp"}
 ```
 
-## 🔧 Development
+## Desenvolvimento
 
-### Prerequisites
-- Node.js 20.19+
-- Directus 11+
+### Requisitos
 
-### Local Development
+- Node.js `20.19+`
+- Directus `11+`
+
+### Comandos
+
 ```bash
-# Clone the repository
-git clone https://github.com/brunribeiro/directus-brazilian-pix.git
-
-# Install dependencies
-cd directus-brazilian-pix
+# instalar dependências
 npm install
 
-# Build the extension
+# build da extensão
 npm run build
 
-# Link for development
+# validação da extensão
+npm run validate
+
+# desenvolvimento (watch)
+npm run dev
+
+# link local para instância Directus
 npm run link
 ```
 
-### Building
-```bash
-npm run build
-```
+## Funções utilitárias (`src/utils/pix-validators.ts`)
 
-### Validation
-```bash
-npm run validate
-```
+### Formatação
 
-## 🤝 Contributing
+- `formatCPF(value: string)`
+- `formatCNPJ(value: string)`
+- `formatPhone(value: string)`
+- `formatPixKey(value: string, type: PixKeyType)`
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Validação
 
-### Development Guidelines
-- Follow the existing code style
-- Add tests for new features
-- Update documentation
-- Ensure all validations pass
+- `isValidCPF(cpf: string)`
+- `isValidCNPJ(cnpj: string)`
+- `isValidPhone(phone: string)`
+- `isValidEmail(email: string)`
+- `isValidEVP(value: string)`
+- `validatePixKey(value: string, type: PixKeyType)`
 
-## 📝 License
+### Utilitários
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- `detectPixKeyType(value: string)`
+- `cleanCPF(value: string)`
+- `cleanCNPJ(value: string)`
+- `cleanPhone(value: string)`
+- `cleanPixKey(value: string, type: PixKeyType)`
 
-## 🐛 Issues & Support
+## Compatibilidade de navegador
 
-Found a bug or need help? Please [open an issue](https://github.com/brunribeiro/directus-brazilian-pix/issues) on GitHub.
+- Navegadores modernos: cópia via Clipboard API
+- Fallback para navegadores legados: `document.execCommand('copy')`
 
-## 🙏 Acknowledgments
+## Contribuição
 
-- Brazilian Central Bank for PIX key specifications
-- Directus team for the amazing extension SDK
-- The Brazilian development community
+Contribuições são bem-vindas via Pull Request.
 
-## 🛠️ Technical Details
+## Licença
 
-### Utility Functions
+MIT. Veja o arquivo `LICENSE`.
 
-The extension provides a comprehensive set of utility functions in `pix-validators.ts`:
+## Suporte
 
-#### Formatting Functions
-- `formatCPF(value: string)`: Formats CPF as XXX.XXX.XXX-XX
-- `formatCNPJ(value: string)`: Formats CNPJ as XX.XXX.XXX/XXXX-XX
-- `formatPhone(value: string)`: Formats phone as +55 (XX) XXXXX-XXXX
-- `formatPixKey(value: string, type: PixKeyType)`: Universal formatter
+Abra uma issue em:
 
-#### Validation Functions
-- `isValidCPF(cpf: string)`: Validates CPF using official algorithm
-- `isValidCNPJ(cnpj: string)`: Validates CNPJ using official algorithm
-- `isValidPhone(phone: string)`: Validates phone with area code check
-- `isValidEmail(email: string)`: Validates email format
-- `isValidEVP(value: string)`: Validates EVP keys as UUID
-- `validatePixKey(value: string, type: PixKeyType)`: Universal validator
+`https://github.com/brunribeiro/directus-brazilian-pix/issues`
 
-#### Utility Functions
-- `detectPixKeyType(value: string)`: Auto-detects PIX key type
-- `cleanCPF/CNPJ/Phone(value: string)`: Removes formatting
-- `cleanPixKey(value: string, type: PixKeyType)`: Universal cleaner
+## Roadmap
 
-### Browser Compatibility
-
-- **Modern Browsers**: Full support with Clipboard API
-- **Legacy Browsers**: Fallback copy mechanism using textarea
-- **Mobile Support**: Touch-optimized with responsive layouts
-- **Vue 3**: Built with Vue 3 Composition API
-
-### Performance Optimizations
-
-- **Real-time Formatting**: Efficient string manipulation without lag
-- **Debounced Validation**: Validates on blur to avoid excessive checks
-- **Computed Properties**: Reactive updates with Vue 3 reactivity
-- **Minimal Re-renders**: Optimized component updates
-
-## 📈 Roadmap
-
-### Planned Features
-- [ ] **Real QR Code Generation**: Generate actual PIX payment QR codes
-- [ ] **PIX API Integration**: Validate keys against banking APIs
-- [ ] **Bulk Operations**: Import/export multiple PIX keys
-- [ ] **Webhooks**: Trigger actions on PIX key changes
-- [ ] **Advanced Formatting**: Custom formatting templates
-- [ ] **Multi-language Support**: Internationalization
-- [ ] **Copy Format Options**: Choose between formatted/unformatted copy
-- [ ] **PIX Key History**: Track changes to PIX keys
-- [ ] **Integration Tests**: Comprehensive test coverage 
+- Geração real de QR Code PIX
+- Internacionalização
+- Mais opções de formato de cópia
+- Testes integrados mais completos
