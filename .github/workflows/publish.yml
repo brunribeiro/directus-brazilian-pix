@@ -30,7 +30,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20.19.0
-          registry-url: https://registry.npmjs.org
+
+      - name: Setup npm (trusted publishing support)
+        run: npm install -g npm@11
 
       - name: Configure Git
         run: |
@@ -50,6 +52,9 @@ jobs:
         run: npm run validate
 
       - name: Publish package
+        env:
+          NODE_AUTH_TOKEN: ""
+          NPM_TOKEN: ""
         run: npm publish --access public --provenance
 
       - name: Push release commit and tag
