@@ -10,27 +10,31 @@ The interface component provides a complete PIX key input experience with:
 - **Multi-type Support**: Full support for all Brazilian PIX key types:
   - CPF (Individual taxpayer ID) with official algorithm validation
   - CNPJ (Company taxpayer ID) with official algorithm validation
-  - Phone numbers (landline and mobile) with area code validation
+  - Phone numbers (landline and mobile, with optional +55 country code) with area code validation
   - Email addresses with standard format validation
+  - EVP random keys (UUID format)
 
 - **Smart Auto-detection**: Automatically detects PIX key type based on input patterns
   - CPF: 11 digits
   - CNPJ: 14 digits
-  - Phone: 10-11 digits with area code recognition
+  - Phone: 10-11 digits (or +55 prefixed) with area code recognition
   - Email: Standard email format
+  - EVP: UUID format
 
 - **Real-time Validation**: 
   - Validates CPF using official Brazilian algorithm (mod 11 check digits)
   - Validates CNPJ using official Brazilian algorithm
   - Validates phone numbers against all valid Brazilian area codes
   - Validates email format with regex pattern
+  - Validates EVP random keys with UUID format validation
   - Shows instant feedback with success/error indicators
 
 - **Intelligent Formatting**: 
   - CPF: Formats as XXX.XXX.XXX-XX as you type
   - CNPJ: Formats as XX.XXX.XXX/XXXX-XX as you type
-  - Phone: Formats as (XX) XXXXX-XXXX or (XX) XXXX-XXXX
+  - Phone: Formats as +55 (XX) XXXXX-XXXX or (XX) XXXX-XXXX
   - Email: Automatically lowercases and trims whitespace
+  - EVP: Lowercases and trims whitespace
   - Restricts input to numbers only for CPF/CNPJ/Phone
 
 - **Type Selection Dropdown**: 
@@ -106,7 +110,7 @@ Add the Brazilian PIX Key interface to any string field:
 | **Disabled** | Boolean | `false` | Disable the input field |
 | **Required** | Boolean | `false` | Make the field required with validation message |
 | **Auto-detect PIX Key Type** | Boolean | `true` | Automatically detect PIX key type based on input format |
-| **Allowed PIX Key Types** | Array | All types | Restrict which PIX key types are allowed (CPF, CNPJ, Phone, Email) |
+| **Allowed PIX Key Types** | Array | All types | Restrict which PIX key types are allowed (CPF, CNPJ, Phone, Email, EVP) |
 | **Default PIX Key Type** | String | `cpf` | Default type when creating new items |
 | **Show Type Selector** | Boolean | `true` | Show/hide the type selector dropdown |
 | **Validate Key Format** | Boolean | `true` | Enable validation using official Brazilian algorithms |
@@ -124,7 +128,7 @@ Configure the display to show PIX keys with type badges:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| **Show Type Badge** | Boolean | `true` | Display a badge/icon showing the PIX key type (CPF, CNPJ, Phone, Email) |
+| **Show Type Badge** | Boolean | `true` | Display a type icon showing the PIX key type (CPF, CNPJ, Phone, Email, EVP) |
 | **Format Key** | Boolean | `true` | Apply proper Brazilian formatting to CPF, CNPJ, and phone numbers |
 | **Hide Partial Key** | Boolean | `false` | Mask part of the key for privacy (CPF and CNPJ only) |
 | **Enable Copy to Clipboard** | Boolean | `true` | Allow users to copy the PIX key by clicking with visual feedback |
@@ -138,8 +142,9 @@ Configure the display to show PIX keys with type badges:
 |------|-------------|--------|---------|
 | **CPF** | Individual taxpayer ID | XXX.XXX.XXX-XX | 123.456.789-01 |
 | **CNPJ** | Company taxpayer ID | XX.XXX.XXX/XXXX-XX | 12.345.678/0001-90 |
-| **Phone** | Mobile/landline number | (XX) XXXXX-XXXX | (11) 99999-9999 |
+| **Phone** | Mobile/landline number | +55 (XX) XXXXX-XXXX | +55 (11) 99999-9999 |
 | **Email** | Email address | user@domain.com | usuario@email.com |
+| **EVP** | Random PIX key | UUID | 123e4567-e89b-12d3-a456-426614174000 |
 
 ### Validation Rules
 
@@ -157,14 +162,18 @@ Configure the display to show PIX keys with type badges:
 
 #### Phone Validation
 - Validates against all 67 valid Brazilian area codes
-- Supports both mobile (11 digits) and landline (10 digits) formats
+- Supports both mobile (11 digits) and landline (10 digits) formats, with optional +55 prefix
 - Mobile numbers must have 9 as the 3rd digit (after area code)
-- Automatically formats as (XX) XXXXX-XXXX or (XX) XXXX-XXXX
+- Automatically formats as +55 (XX) XXXXX-XXXX or (XX) XXXX-XXXX
 
 #### Email Validation
 - Standard email format validation using regex
 - Automatically lowercases and trims whitespace
 - Maximum length of 254 characters (RFC standard)
+
+#### EVP Validation
+- Validates random PIX keys in UUID format
+- Automatically lowercases and trims whitespace
 
 ## 🎨 Styling & UI Features
 
@@ -177,6 +186,7 @@ The extension uses Directus design tokens and follows the system theme automatic
 - **CNPJ**: Business icon (`business`)
 - **Phone**: Phone icon (`phone`)
 - **Email**: Email icon (`email`)
+- **EVP**: Key icon (`key`)
 - **Default**: QR Code icon (`qr_code`)
 
 #### Interactive Features
@@ -220,17 +230,20 @@ PIX keys are stored as JSON strings containing both the key and its type:
 {"key": "12345678000190", "type": "cnpj"}
 
 // Phone
-{"key": "11999999999", "type": "phone"}
+{"key": "5511999999999", "type": "phone"}
 
 // Email
 {"key": "user@example.com", "type": "email"}
+
+// EVP
+{"key": "123e4567-e89b-12d3-a456-426614174000", "type": "evp"}
 ```
 
 ## 🔧 Development
 
 ### Prerequisites
-- Node.js 18+
-- Directus 10+
+- Node.js 20.19+
+- Directus 11+
 
 ### Local Development
 ```bash
@@ -291,7 +304,7 @@ The extension provides a comprehensive set of utility functions in `pix-validato
 #### Formatting Functions
 - `formatCPF(value: string)`: Formats CPF as XXX.XXX.XXX-XX
 - `formatCNPJ(value: string)`: Formats CNPJ as XX.XXX.XXX/XXXX-XX
-- `formatPhone(value: string)`: Formats phone as (XX) XXXXX-XXXX
+- `formatPhone(value: string)`: Formats phone as +55 (XX) XXXXX-XXXX
 - `formatPixKey(value: string, type: PixKeyType)`: Universal formatter
 
 #### Validation Functions
@@ -299,6 +312,7 @@ The extension provides a comprehensive set of utility functions in `pix-validato
 - `isValidCNPJ(cnpj: string)`: Validates CNPJ using official algorithm
 - `isValidPhone(phone: string)`: Validates phone with area code check
 - `isValidEmail(email: string)`: Validates email format
+- `isValidEVP(value: string)`: Validates EVP keys as UUID
 - `validatePixKey(value: string, type: PixKeyType)`: Universal validator
 
 #### Utility Functions
@@ -326,7 +340,6 @@ The extension provides a comprehensive set of utility functions in `pix-validato
 - [ ] **Real QR Code Generation**: Generate actual PIX payment QR codes
 - [ ] **PIX API Integration**: Validate keys against banking APIs
 - [ ] **Bulk Operations**: Import/export multiple PIX keys
-- [ ] **EVP Support**: Random PIX keys (UUID format)
 - [ ] **Webhooks**: Trigger actions on PIX key changes
 - [ ] **Advanced Formatting**: Custom formatting templates
 - [ ] **Multi-language Support**: Internationalization

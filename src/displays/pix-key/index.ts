@@ -16,7 +16,7 @@ export default defineDisplay({
 			meta: {
 				width: 'half',
 				interface: 'boolean',
-				note: 'Display a badge showing the PIX key type (CPF, CNPJ, Phone, Email)',
+				note: 'Display an icon showing the PIX key type (CPF, CNPJ, Phone, Email, EVP)',
 			},
 			schema: {
 				default_value: true,

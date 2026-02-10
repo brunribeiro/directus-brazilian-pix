@@ -4,7 +4,7 @@ import InterfaceComponent from './interface.vue';
 export default defineInterface({
 	id: 'pix-key',
 	name: 'Brazilian PIX Key',
-	description: 'With type selection and validation (CPF, CNPJ, Phone, Email)',
+	description: 'With type selection and validation (CPF, CNPJ, Phone, Email, EVP)',
 	icon: 'qr_code_2',
 	component: InterfaceComponent,
 	types: ['string'],
@@ -71,7 +71,8 @@ export default defineInterface({
 						{ text: 'CPF', value: 'cpf' },
 						{ text: 'CNPJ', value: 'cnpj' },
 						{ text: 'Telefone', value: 'phone' },
-						{ text: 'E-mail', value: 'email' }
+						{ text: 'E-mail', value: 'email' },
+						{ text: 'EVP (Aleatoria)', value: 'evp' }
 					]
 				},
 				note: 'Select which PIX key types are allowed. Leave empty to allow all types.',
@@ -89,7 +90,8 @@ export default defineInterface({
 						{ text: 'CPF', value: 'cpf' },
 						{ text: 'CNPJ', value: 'cnpj' },
 						{ text: 'Telefone', value: 'phone' },
-						{ text: 'E-mail', value: 'email' }
+						{ text: 'E-mail', value: 'email' },
+						{ text: 'EVP (Aleatoria)', value: 'evp' }
 					]
 				},
 				note: 'Default PIX key type when creating new items',
@@ -105,7 +107,7 @@ export default defineInterface({
 			meta: {
 				width: 'half',
 				interface: 'boolean',
-				note: 'Mostrar seletor de tipo de chave',
+				note: 'Show or hide the PIX key type selector',
 			},
 			schema: {
 				default_value: true,

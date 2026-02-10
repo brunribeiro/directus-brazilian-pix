@@ -1,16 +1,16 @@
 <template>
 	<div class="pix-key-container">
-		<div class="pix-key-input-group">
-			<!-- PIX Key Type Dropdown -->
-			<div class="pix-type-selector">
+		<div class="pix-key-input-group" :class="{ 'without-selector': !showTypeSelector }">
+			<div v-if="showTypeSelector" class="pix-type-selector">
 				<v-select
 					v-model="selectedType"
 					:items="availableTypes"
 					item-text="label"
 					item-value="value"
-					:disabled="disabled"
-					:placeholder="'Tipo de chave'"
+					:disabled="props.disabled"
+					placeholder="Tipo de chave"
 					class="type-dropdown"
+					@update:model-value="onTypeSelected"
 				>
 					<template #selection="{ item }">
 						<div class="type-selection">
@@ -27,11 +27,10 @@
 				</v-select>
 			</div>
 
-			<!-- PIX Key Input -->
 			<div class="pix-key-input">
 				<v-input
 					:model-value="displayValue"
-					:placeholder="props.placeholder"
+					:placeholder="currentPlaceholder"
 					:disabled="props.disabled"
 					:class="{ 'has-error': hasError }"
 					@update:model-value="updateValue"
@@ -45,24 +44,22 @@
 					<template #append v-if="hasError">
 						<v-icon name="error" class="error-icon" />
 					</template>
-					<template #append v-else-if="isValid && value">
+					<template #append v-else-if="isValid && props.value">
 						<v-icon name="check_circle" class="success-icon" />
 					</template>
 				</v-input>
 			</div>
 		</div>
-		
-		<!-- Validation Messages -->
+
 		<div v-if="hasError && errorMessage" class="error-message">
 			<v-icon name="error" />
 			{{ errorMessage }}
 		</div>
-		
-		<div v-else-if="isValid && value" class="success-message">
+
+		<div v-else-if="isValid && props.value" class="success-message">
 			{{ getSuccessMessage() }}
 		</div>
 
-		<!-- Auto-detection indicator -->
 		<div v-if="autoDetectType && autoDetected && selectedType" class="auto-detect-indicator">
 			<v-icon name="auto_awesome" small />
 			<span>Tipo detectado automaticamente</span>
@@ -71,16 +68,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import {
-	PixKeyType,
-	PIX_KEY_TYPE_LABELS,
-	PIX_KEY_TYPE_ICONS,
-	PIX_KEY_TYPE_PLACEHOLDERS,
-	formatPixKey,
-	validatePixKey,
 	cleanPixKey,
-	detectPixKeyType
+	detectPixKeyType,
+	formatPixKey,
+	PixKeyType,
+	PIX_KEY_TYPE_ICONS,
+	PIX_KEY_TYPE_LABELS,
+	PIX_KEY_TYPE_PLACEHOLDERS,
+	validatePixKey,
 } from '../../utils/pix-validators';
 
 interface Props {
@@ -89,24 +86,83 @@ interface Props {
 	disabled?: boolean;
 	required?: boolean;
 	autoDetectType?: boolean;
-	allowedTypes?: string[];
+	auto_detect_type?: boolean;
+	allowedTypes?: string[] | string | null;
+	allowed_types?: string[] | string | null;
 	defaultType?: string;
+	default_type?: string;
 	validateKey?: boolean;
+	validate_key?: boolean;
+	showTypeSelector?: boolean;
+	show_type_selector?: boolean;
 }
 
 interface Emits {
 	(event: 'input', value: string | null): void;
 }
 
+interface StoredPixData {
+	key: string;
+	type: PixKeyType | null;
+}
+
+const ALL_PIX_KEY_TYPES = Object.values(PixKeyType) as PixKeyType[];
+
+function toPixType(value: unknown): PixKeyType | null {
+	if (typeof value !== 'string') return null;
+	return ALL_PIX_KEY_TYPES.includes(value as PixKeyType) ? (value as PixKeyType) : null;
+}
+
+function parseAllowedTypes(value: unknown): PixKeyType[] {
+	let rawValues: unknown[] = [];
+
+	if (Array.isArray(value)) {
+		rawValues = value;
+	} else if (typeof value === 'string' && value.trim().length > 0) {
+		try {
+			const parsed = JSON.parse(value);
+			if (Array.isArray(parsed)) rawValues = parsed;
+		} catch {
+			rawValues = value
+				.split(',')
+				.map((item) => item.trim())
+				.filter(Boolean);
+		}
+	}
+
+	return [...new Set(rawValues.map((item) => toPixType(item)).filter((item): item is PixKeyType => item !== null))];
+}
+
+function parseStoredPixData(rawValue: string | null | undefined): StoredPixData | null {
+	if (!rawValue) return null;
+
+	try {
+		const parsed = JSON.parse(rawValue);
+		if (parsed && typeof parsed === 'object' && 'key' in parsed) {
+			const key = typeof parsed.key === 'string' ? parsed.key : '';
+			return {
+				key,
+				type: toPixType(parsed.type),
+			};
+		}
+	} catch {
+		// Keep backward compatibility with plain string values
+	}
+
+	return {
+		key: rawValue,
+		type: null,
+	};
+}
+
 const props = withDefaults(defineProps<Props>(), {
 	value: null,
-	placeholder: 'Selecione o tipo de chave PIX...',
+	placeholder: 'Digite ou cole sua chave PIX',
 	disabled: false,
 	required: false,
 	autoDetectType: true,
-	allowedTypes: () => [],
-	defaultType: 'cpf',
 	validateKey: true,
+	showTypeSelector: true,
 });
 
 const emit = defineEmits<Emits>();
@@ -117,123 +173,115 @@ const errorMessage = ref('');
 const isValid = ref(false);
 const autoDetected = ref(false);
 
-// Available PIX key types based on allowed types
-const availableTypes = computed(() => {
-	const allTypes = Object.values(PixKeyType);
-	const allowed = props.allowedTypes?.length ? props.allowedTypes : allTypes;
-	
-	return allowed.map(type => ({
-		value: type,
-		label: PIX_KEY_TYPE_LABELS[type as PixKeyType],
-		icon: PIX_KEY_TYPE_ICONS[type as PixKeyType]
-	}));
+const showTypeSelector = computed(() => props.showTypeSelector ?? props.show_type_selector ?? true);
+const autoDetectType = computed(() => props.autoDetectType ?? props.auto_detect_type ?? true);
+const validateKey = computed(() => props.validateKey ?? props.validate_key ?? true);
+
+const allowedTypes = computed(() => {
+	const parsed = parseAllowedTypes(props.allowedTypes ?? props.allowed_types);
+	return parsed.length > 0 ? parsed : ALL_PIX_KEY_TYPES;
 });
 
-// Current placeholder based on selected type
+const defaultType = computed(() => {
+	const configuredDefault = toPixType(props.defaultType ?? props.default_type);
+	if (configuredDefault && allowedTypes.value.includes(configuredDefault)) return configuredDefault;
+	return allowedTypes.value[0] ?? PixKeyType.CPF;
+});
+
+const availableTypes = computed(() =>
+	allowedTypes.value.map((type) => ({
+		value: type,
+		label: PIX_KEY_TYPE_LABELS[type],
+		icon: PIX_KEY_TYPE_ICONS[type],
+	}))
+);
+
 const currentPlaceholder = computed(() => {
-	if (selectedType.value) {
-		return PIX_KEY_TYPE_PLACEHOLDERS[selectedType.value];
-	}
+	if (selectedType.value) return PIX_KEY_TYPE_PLACEHOLDERS[selectedType.value];
 	return props.placeholder;
 });
 
-// Display value with formatting
 const displayValue = computed(() => {
-	if (!props.value || !selectedType.value) return '';
-	
-	try {
-		// Try to parse as JSON first
-		const pixData = JSON.parse(props.value);
-		if (pixData.key) {
-			return formatPixKey(pixData.key, selectedType.value);
-		}
-	} catch {
-		// If not JSON, format as plain string
-		return formatPixKey(props.value, selectedType.value);
-	}
-	
-	return '';
+	if (!props.value) return '';
+
+	const parsed = parseStoredPixData(props.value);
+	if (!parsed?.key) return '';
+
+	if (!selectedType.value) return parsed.key;
+	return formatPixKey(parsed.key, selectedType.value);
 });
 
-// Get max length based on type
 const getMaxLength = (): number => {
 	switch (selectedType.value) {
 		case PixKeyType.CPF:
-			return 14; // 123.456.789-01
+			return 14;
 		case PixKeyType.CNPJ:
-			return 18; // 12.345.678/0001-90
+			return 18;
 		case PixKeyType.PHONE:
-			return 15; // (11) 99999-9999
+			return 19;
 		case PixKeyType.EMAIL:
-			return 254; // RFC standard
+			return 254;
+		case PixKeyType.EVP:
+			return 36;
 		default:
 			return 255;
 	}
 };
 
-// Get current icon
 const getCurrentIcon = (): string => {
-	if (selectedType.value) {
-		return PIX_KEY_TYPE_ICONS[selectedType.value];
-	}
+	if (selectedType.value) return PIX_KEY_TYPE_ICONS[selectedType.value];
 	return 'qr_code';
 };
 
-// Get type label
-const getTypeLabel = (type: PixKeyType): string => {
-	return PIX_KEY_TYPE_LABELS[type];
-};
+const getTypeLabel = (type: PixKeyType): string => PIX_KEY_TYPE_LABELS[type];
 
-// Get success message
-const getSuccessMessage = (): string => {
-	return 'Chave PIX válida';
-};
+const getSuccessMessage = (): string => 'Chave PIX valida';
 
-// Validate the current value
 const validateValue = (value: string): boolean => {
 	hasError.value = false;
 	errorMessage.value = '';
 	isValid.value = false;
-	
-	// Check if value is required
+
 	if (!value && props.required) {
 		hasError.value = true;
-		errorMessage.value = 'Chave PIX é obrigatória';
+		errorMessage.value = 'Chave PIX e obrigatoria';
 		return false;
 	}
-	
-	// If no value, no validation needed
+
 	if (!value) return true;
-	
-	// Check if type is selected
+
 	if (!selectedType.value) {
 		hasError.value = true;
 		errorMessage.value = 'Selecione o tipo de chave PIX';
 		return false;
 	}
-	
-	// Validate the key if validation is enabled
-	if (props.validateKey) {
-		if (!validatePixKey(value, selectedType.value)) {
-			hasError.value = true;
-			errorMessage.value = `Chave PIX ${getTypeLabel(selectedType.value)} inválida`;
-			return false;
-		}
-		
-		isValid.value = true;
+
+	if (validateKey.value && !validatePixKey(value, selectedType.value)) {
+		hasError.value = true;
+		errorMessage.value = `Chave PIX ${getTypeLabel(selectedType.value)} invalida`;
+		return false;
 	}
-	
+
+	if (validateKey.value) isValid.value = true;
 	return true;
 };
 
-// Handle value updates
-const updateValue = (newValue: string) => {
-	// Reset auto-detection flag when user types
-	if (autoDetected.value) {
-		autoDetected.value = false;
+const maybeAutoDetectType = (value: string) => {
+	if (!autoDetectType.value) return;
+
+	const shouldDetect = !selectedType.value || autoDetected.value || !showTypeSelector.value;
+	if (!shouldDetect) return;
+
+	const detectedType = detectPixKeyType(value);
+	if (detectedType && allowedTypes.value.includes(detectedType)) {
+		selectedType.value = detectedType;
+		autoDetected.value = true;
 	}
-	
-	// Handle empty/null values
+};
+
+const updateValue = (newValue: string) => {
+	if (autoDetected.value) autoDetected.value = false;
+
 	if (!newValue || newValue.trim() === '') {
 		emit('input', null);
 		hasError.value = false;
@@ -241,145 +289,100 @@ const updateValue = (newValue: string) => {
 		isValid.value = false;
 		return;
 	}
-	
-	// Auto-detect type if enabled and no type is selected
-	if (props.autoDetectType && newValue && !selectedType.value) {
-		const detectedType = detectPixKeyType(newValue);
-		if (detectedType && (!props.allowedTypes?.length || props.allowedTypes.includes(detectedType))) {
-			selectedType.value = detectedType;
-			autoDetected.value = true;
-		}
-	}
-	
-	// Format the value based on type
-	let formattedValue = newValue;
-	if (selectedType.value) {
-		formattedValue = formatPixKey(newValue, selectedType.value);
-	}
-	
-	// Validate the value
+
+	maybeAutoDetectType(newValue);
+
+	const formattedValue = selectedType.value ? formatPixKey(newValue, selectedType.value) : newValue.trim();
 	validateValue(formattedValue);
-	
-	// Emit the clean value for storage
-	const cleanValue = selectedType.value ? cleanPixKey(formattedValue, selectedType.value) : newValue;
-	
-	// Store as JSON to include both key and type
+
+	const cleanedValue = selectedType.value ? cleanPixKey(formattedValue, selectedType.value) : formattedValue;
 	const pixData = {
-		key: cleanValue || null,
-		type: selectedType.value || null
+		key: cleanedValue || null,
+		type: selectedType.value ?? null,
 	};
-	
+
 	emit('input', JSON.stringify(pixData));
 };
 
-// Handle blur event
 const onBlur = () => {
-	if (props.value && selectedType.value) {
-		try {
-			const pixData = JSON.parse(props.value);
-			if (pixData.key) {
-				const formatted = formatPixKey(pixData.key, selectedType.value);
-				validateValue(formatted);
-				return;
-			}
-		} catch {
-			// Continue with original logic
-		}
-		
-		const formatted = formatPixKey(props.value, selectedType.value);
-		validateValue(formatted);
+	const parsed = parseStoredPixData(props.value);
+	if (!parsed?.key) return;
+
+	const valueToValidate = selectedType.value ? formatPixKey(parsed.key, selectedType.value) : parsed.key;
+	validateValue(valueToValidate);
+};
+
+const onTypeSelected = (type: PixKeyType | null) => {
+	selectedType.value = type;
+	autoDetected.value = false;
+};
+
+const onKeyDown = (event: KeyboardEvent) => {
+	if (!selectedType.value || ![PixKeyType.CPF, PixKeyType.CNPJ, PixKeyType.PHONE].includes(selectedType.value)) return;
+
+	const controlKeys = new Set(['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']);
+	if (controlKeys.has(event.key)) return;
+
+	if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x', 'z'].includes(event.key.toLowerCase())) return;
+
+	if (!/^\d$/.test(event.key)) {
+		event.preventDefault();
 	}
 };
 
-// Handle keydown for numeric types
-const onKeyDown = (event: KeyboardEvent) => {
-	// For CPF, CNPJ, and Phone, restrict to numbers only
-	if (selectedType.value && [PixKeyType.CPF, PixKeyType.CNPJ, PixKeyType.PHONE].includes(selectedType.value)) {
-		// Allow: backspace, delete, tab, escape, enter
-		if ([8, 9, 27, 13, 46].indexOf(event.keyCode) !== -1 ||
-			// Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+Z
-			(event.ctrlKey === true && [65, 67, 86, 88, 90].indexOf(event.keyCode) !== -1) ||
-			// Allow: Cmd+A, Cmd+C, Cmd+V, Cmd+X, Cmd+Z (Mac)
-			(event.metaKey === true && [65, 67, 86, 88, 90].indexOf(event.keyCode) !== -1) ||
-			// Allow: home, end, left, right, down, up
-			(event.keyCode >= 35 && event.keyCode <= 40)) {
+watch(selectedType, (newType) => {
+	if (!newType) return;
+
+	const parsed = parseStoredPixData(props.value);
+	if (!parsed?.key) return;
+
+	const formatted = formatPixKey(parsed.key, newType);
+	validateValue(formatted);
+});
+
+watch(
+	() => props.value,
+	(newValue) => {
+		if (!newValue) {
+			hasError.value = false;
+			errorMessage.value = '';
+			isValid.value = false;
 			return;
 		}
-		
-		// Only allow numbers
-		if ((event.shiftKey || (event.keyCode < 48 || event.keyCode > 57)) && 
-			(event.keyCode < 96 || event.keyCode > 105)) {
-			event.preventDefault();
-		}
-	}
-};
 
-// Watch for type changes (manual selection)
-watch(selectedType, (newType) => {
-	// Reset auto-detection flag when user manually selects type
-	autoDetected.value = false;
-	
-	if (props.value && newType) {
-		try {
-			const pixData = JSON.parse(props.value);
-			if (pixData.key) {
-				const formatted = formatPixKey(pixData.key, newType);
-				validateValue(formatted);
-				return;
-			}
-		} catch {
-			// Continue with original logic
+		const parsed = parseStoredPixData(newValue);
+		if (!parsed?.key) return;
+
+		const parsedType = parsed.type;
+		if (parsedType && allowedTypes.value.includes(parsedType)) {
+			selectedType.value = parsedType;
+		} else {
+			maybeAutoDetectType(parsed.key);
 		}
-		
-		const formatted = formatPixKey(props.value, newType);
+
+		if (!selectedType.value || !allowedTypes.value.includes(selectedType.value)) {
+			selectedType.value = defaultType.value;
+		}
+
+		const formatted = selectedType.value ? formatPixKey(parsed.key, selectedType.value) : parsed.key;
 		validateValue(formatted);
-	}
-});
+	},
+	{ immediate: true }
+);
 
-// Watch for external value changes
-watch(() => props.value, (newValue) => {
-	if (newValue) {
-		try {
-			// Try to parse as JSON (stored format)
-			const pixData = JSON.parse(newValue);
-			if (pixData.key && pixData.type) {
-				selectedType.value = pixData.type;
-				const formatted = formatPixKey(pixData.key, pixData.type);
-				validateValue(formatted);
-				return;
-			}
-		} catch {
-			// If not JSON, treat as plain string
+watch(
+	allowedTypes,
+	() => {
+		if (!selectedType.value || !allowedTypes.value.includes(selectedType.value)) {
+			selectedType.value = defaultType.value;
 		}
-		
-		// Auto-detect type if enabled and no type selected
-		if (props.autoDetectType && !selectedType.value) {
-			const detectedType = detectPixKeyType(newValue);
-			if (detectedType && (!props.allowedTypes?.length || props.allowedTypes.includes(detectedType))) {
-				selectedType.value = detectedType;
-				autoDetected.value = true;
-			}
-		}
-		
-		if (selectedType.value) {
-			const formatted = formatPixKey(newValue, selectedType.value);
-			validateValue(formatted);
-		}
-	} else {
-		hasError.value = false;
-		errorMessage.value = '';
-		isValid.value = false;
-	}
-});
+	},
+	{ immediate: true }
+);
 
-// Initialize on mount
 onMounted(() => {
-	// Set default type if no value and conditions are met
-	if (!props.value && props.defaultType) {
-		const defaultType = props.defaultType as PixKeyType;
-		if (!props.allowedTypes?.length || props.allowedTypes.includes(defaultType)) {
-			selectedType.value = defaultType;
-		}
+	if (!props.value && (!selectedType.value || !allowedTypes.value.includes(selectedType.value))) {
+		selectedType.value = defaultType.value;
 	}
 });
 </script>
@@ -395,8 +398,12 @@ onMounted(() => {
 	align-items: flex-start;
 }
 
+.pix-key-input-group.without-selector .pix-key-input {
+	width: 100%;
+}
+
 .pix-type-selector {
-	min-width: 140px;
+	min-width: 160px;
 	flex-shrink: 0;
 }
 
@@ -416,10 +423,7 @@ onMounted(() => {
 }
 
 .type-selection .v-icon,
-.type-option .v-icon {
-	color: var(--foreground-subdued);
-}
-
+.type-option .v-icon,
 .key-type-icon {
 	color: var(--foreground-subdued);
 }
@@ -436,19 +440,7 @@ onMounted(() => {
 	color: var(--success);
 }
 
-.message {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	font-size: 12px;
-	margin-top: 6px;
-}
-
-.error-message {
-	font-size: 12px;
-	margin-top: 4px;
-}
-
+.error-message,
 .success-message {
 	font-size: 12px;
 	margin-top: 4px;
@@ -468,10 +460,10 @@ onMounted(() => {
 		flex-direction: column;
 		gap: 12px;
 	}
-	
+
 	.pix-type-selector {
 		min-width: unset;
 		width: 100%;
 	}
 }
-</style> 
+</style>

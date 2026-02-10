@@ -1,6 +1,6 @@
 {
 	"name": "directus-brazilian-pix",
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"description": "Brazilian PIX key extensions for Directus - Complete PIX key input with type selection and validation (CPF, CNPJ, Phone, Email)",
 	"keywords": [
 		"directus",
@@ -60,7 +60,7 @@
 				"source": "src/displays/pix-key/index.ts"
 			}
 		],
-		"host": "^10.0.0"
+		"host": "^11.0.0"
 	},
 	"scripts": {
 		"build": "directus-extension build",
@@ -70,10 +70,10 @@
 		"prepublishOnly": "npm run build"
 	},
 	"devDependencies": {
-		"@directus/extensions-sdk": "13.1.1"
+		"@directus/extensions-sdk": "^17.0.7"
 	},
 	"engines": {
-		"node": ">=18.0.0"
+		"node": ">=20.19.0"
 	},
 	"publishConfig": {
 		"access": "public"

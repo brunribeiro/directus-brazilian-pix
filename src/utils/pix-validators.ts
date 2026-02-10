@@ -1,9 +1,10 @@
 // PIX Key Types
 export enum PixKeyType {
 	CPF = 'cpf',
-	CNPJ = 'cnpj', 
+	CNPJ = 'cnpj',
 	PHONE = 'phone',
-	EMAIL = 'email'
+	EMAIL = 'email',
+	EVP = 'evp',
 }
 
 // PIX Key Type Labels
@@ -11,7 +12,8 @@ export const PIX_KEY_TYPE_LABELS = {
 	[PixKeyType.CPF]: 'CPF',
 	[PixKeyType.CNPJ]: 'CNPJ',
 	[PixKeyType.PHONE]: 'Telefone',
-	[PixKeyType.EMAIL]: 'E-mail'
+	[PixKeyType.EMAIL]: 'E-mail',
+	[PixKeyType.EVP]: 'EVP (Aleatoria)',
 };
 
 // PIX Key Type Icons
@@ -19,55 +21,90 @@ export const PIX_KEY_TYPE_ICONS = {
 	[PixKeyType.CPF]: 'person',
 	[PixKeyType.CNPJ]: 'business',
 	[PixKeyType.PHONE]: 'phone',
-	[PixKeyType.EMAIL]: 'email'
+	[PixKeyType.EMAIL]: 'email',
+	[PixKeyType.EVP]: 'key',
 };
 
 // PIX Key Type Placeholders
 export const PIX_KEY_TYPE_PLACEHOLDERS = {
 	[PixKeyType.CPF]: '123.456.789-01',
 	[PixKeyType.CNPJ]: '12.345.678/0001-90',
-	[PixKeyType.PHONE]: '(11) 99999-9999',
-	[PixKeyType.EMAIL]: 'exemplo@email.com'
+	[PixKeyType.PHONE]: '+55 (11) 99999-9999',
+	[PixKeyType.EMAIL]: 'exemplo@email.com',
+	[PixKeyType.EVP]: '123e4567-e89b-12d3-a456-426614174000',
 };
+
+export const BRAZILIAN_AREA_CODES = [
+	11, 12, 13, 14, 15, 16, 17, 18, 19, // Sao Paulo
+	21, 22, 24, // Rio de Janeiro
+	27, 28, // Espirito Santo
+	31, 32, 33, 34, 35, 37, 38, // Minas Gerais
+	41, 42, 43, 44, 45, 46, // Parana
+	47, 48, 49, // Santa Catarina
+	51, 53, 54, 55, // Rio Grande do Sul
+	61, // Distrito Federal
+	62, 64, // Goias
+	63, // Tocantins
+	65, 66, // Mato Grosso
+	67, // Mato Grosso do Sul
+	68, // Acre
+	69, // Rondonia
+	71, 73, 74, 75, 77, // Bahia
+	79, // Sergipe
+	81, 87, // Pernambuco
+	82, // Alagoas
+	83, // Paraiba
+	84, // Rio Grande do Norte
+	85, 88, // Ceara
+	86, 89, // Piaui
+	91, 93, 94, // Para
+	92, 97, // Amazonas
+	95, // Roraima
+	96, // Amapa
+	98, 99, // Maranhao
+];
+
+function normalizePhoneDigits(value: string): { local: string; hasCountryCode: boolean } {
+	const onlyDigits = value.replace(/\D/g, '');
+	const hasCountryCode = onlyDigits.startsWith('55') && (onlyDigits.length === 12 || onlyDigits.length === 13);
+	const local = hasCountryCode ? onlyDigits.slice(2) : onlyDigits;
+	return { local, hasCountryCode };
+}
 
 // CPF Validation
 export function formatCPF(value: string): string {
 	const cleanValue = value.replace(/\D/g, '');
-	
+
 	if (cleanValue.length === 0) return '';
 	if (cleanValue.length <= 3) return cleanValue;
 	if (cleanValue.length <= 6) return cleanValue.replace(/(\d{3})(\d{1,3})/, '$1.$2');
 	if (cleanValue.length <= 9) return cleanValue.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-	
+
 	return cleanValue.slice(0, 11).replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
 }
 
 export function isValidCPF(cpf: string): boolean {
 	const cleanCPF = cpf.replace(/\D/g, '');
-	
-	// Check if has 11 digits and is not all the same digit
+
 	if (cleanCPF.length !== 11 || /^(\d)\1{10}$/.test(cleanCPF)) {
 		return false;
 	}
-	
-	// CPF validation algorithm - first digit
+
 	let sum = 0;
 	for (let i = 0; i < 9; i++) {
-		sum += parseInt(cleanCPF.charAt(i)) * (10 - i);
+		sum += Number.parseInt(cleanCPF.charAt(i), 10) * (10 - i);
 	}
 	let digit1 = 11 - (sum % 11);
 	if (digit1 > 9) digit1 = 0;
-	
-	// CPF validation algorithm - second digit
+
 	sum = 0;
 	for (let i = 0; i < 10; i++) {
-		sum += parseInt(cleanCPF.charAt(i)) * (11 - i);
+		sum += Number.parseInt(cleanCPF.charAt(i), 10) * (11 - i);
 	}
 	let digit2 = 11 - (sum % 11);
 	if (digit2 > 9) digit2 = 0;
-	
-	return digit1 === parseInt(cleanCPF.charAt(9)) && 
-		   digit2 === parseInt(cleanCPF.charAt(10));
+
+	return digit1 === Number.parseInt(cleanCPF.charAt(9), 10) && digit2 === Number.parseInt(cleanCPF.charAt(10), 10);
 }
 
 export function cleanCPF(cpf: string): string {
@@ -77,13 +114,13 @@ export function cleanCPF(cpf: string): string {
 // CNPJ Validation
 export function formatCNPJ(value: string): string {
 	const cleanValue = value.replace(/\D/g, '');
-	
+
 	if (cleanValue.length === 0) return '';
 	if (cleanValue.length <= 2) return cleanValue;
 	if (cleanValue.length <= 5) return cleanValue.replace(/(\d{2})(\d{1,3})/, '$1.$2');
 	if (cleanValue.length <= 8) return cleanValue.replace(/(\d{2})(\d{3})(\d{1,3})/, '$1.$2.$3');
 	if (cleanValue.length <= 12) return cleanValue.replace(/(\d{2})(\d{3})(\d{3})(\d{1,4})/, '$1.$2.$3/$4');
-	
+
 	return cleanValue.slice(0, 14).replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
 }
 
@@ -101,27 +138,27 @@ export function isValidCNPJ(cnpj: string): boolean {
 	let pos = size - 7;
 
 	for (let i = size; i >= 1; i--) {
-		sum += parseInt(numbers.charAt(size - i)) * pos--;
+		sum += Number.parseInt(numbers.charAt(size - i), 10) * pos--;
 		if (pos < 2) pos = 9;
 	}
 
 	let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-	if (result !== parseInt(digits.charAt(0))) {
+	if (result !== Number.parseInt(digits.charAt(0), 10)) {
 		return false;
 	}
 
-	size = size + 1;
+	size += 1;
 	numbers = cleanCNPJ.substring(0, size);
 	sum = 0;
 	pos = size - 7;
 
 	for (let i = size; i >= 1; i--) {
-		sum += parseInt(numbers.charAt(size - i)) * pos--;
+		sum += Number.parseInt(numbers.charAt(size - i), 10) * pos--;
 		if (pos < 2) pos = 9;
 	}
 
 	result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-	return result === parseInt(digits.charAt(1));
+	return result === Number.parseInt(digits.charAt(1), 10);
 }
 
 export function cleanCNPJ(cnpj: string): string {
@@ -130,75 +167,43 @@ export function cleanCNPJ(cnpj: string): string {
 
 // Phone Validation
 export function formatPhone(value: string): string {
-	const cleanValue = value.replace(/\D/g, '');
-	
-	if (cleanValue.length === 0) return '';
-	if (cleanValue.length <= 2) return `(${cleanValue}`;
-	if (cleanValue.length <= 6) return cleanValue.replace(/(\d{2})(\d{1,4})/, '($1) $2');
-	if (cleanValue.length <= 10) return cleanValue.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
-	
-	return cleanValue.slice(0, 11).replace(/(\d{2})(\d{5})(\d{1,4})/, '($1) $2-$3');
+	const { local, hasCountryCode } = normalizePhoneDigits(value);
+
+	if (local.length === 0) return '';
+
+	let formattedLocal = local;
+	if (local.length <= 2) {
+		formattedLocal = `(${local}`;
+	} else if (local.length <= 6) {
+		formattedLocal = local.replace(/(\d{2})(\d{1,4})/, '($1) $2');
+	} else if (local.length <= 10) {
+		formattedLocal = local.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
+	} else {
+		formattedLocal = local.slice(0, 11).replace(/(\d{2})(\d{5})(\d{1,4})/, '($1) $2-$3');
+	}
+
+	return hasCountryCode ? `+55 ${formattedLocal}` : formattedLocal;
 }
 
 export function isValidPhone(phone: string): boolean {
-	const cleanPhone = phone.replace(/\D/g, '');
+	const { local } = normalizePhoneDigits(phone);
 
-	// Must be 10 or 11 digits
-	if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+	if (local.length < 10 || local.length > 11) {
 		return false;
 	}
 
-	// Area code (first 2 digits) should be valid Brazilian area codes
-	const areaCode = parseInt(cleanPhone.substring(0, 2));
-	const validAreaCodes = [
-		11, 12, 13, 14, 15, 16, 17, 18, 19, // São Paulo
-		21, 22, 24, // Rio de Janeiro
-		27, 28, // Espírito Santo
-		31, 32, 33, 34, 35, 37, 38, // Minas Gerais
-		41, 42, 43, 44, 45, 46, // Paraná
-		47, 48, 49, // Santa Catarina
-		51, 53, 54, 55, // Rio Grande do Sul
-		61, // Distrito Federal
-		62, 64, // Goiás
-		63, // Tocantins
-		65, 66, // Mato Grosso
-		67, // Mato Grosso do Sul
-		68, // Acre
-		69, // Rondônia
-		71, 73, 74, 75, 77, // Bahia
-		79, // Sergipe
-		81, 87, // Pernambuco
-		82, // Alagoas
-		83, // Paraíba
-		84, // Rio Grande do Norte
-		85, 88, // Ceará
-		86, 89, // Piauí
-		91, 93, 94, // Pará
-		92, 97, // Amazonas
-		95, // Roraima
-		96, // Amapá
-		98, 99, // Maranhão
-	];
-
-	if (!validAreaCodes.includes(areaCode)) {
+	const areaCode = Number.parseInt(local.substring(0, 2), 10);
+	if (!BRAZILIAN_AREA_CODES.includes(areaCode)) {
 		return false;
 	}
 
-	// For 11 digits, 3rd digit should be 9 (mobile numbers)
-	if (cleanPhone.length === 11) {
-		const thirdDigit = parseInt(cleanPhone.charAt(2));
-		if (thirdDigit !== 9) {
-			return false;
-		}
+	const thirdDigit = Number.parseInt(local.charAt(2), 10);
+	if (local.length === 11 && thirdDigit !== 9) {
+		return false;
 	}
 
-	// For 10 digits, check if it's a valid landline or mobile
-	if (cleanPhone.length === 10) {
-		const thirdDigit = parseInt(cleanPhone.charAt(2));
-		// Landline numbers: 2-5, 7, or mobile starting with 6, 7, 8, 9
-		if (![2, 3, 4, 5, 6, 7, 8, 9].includes(thirdDigit)) {
-			return false;
-		}
+	if (local.length === 10 && ![2, 3, 4, 5, 6, 7, 8, 9].includes(thirdDigit)) {
+		return false;
 	}
 
 	return true;
@@ -214,41 +219,49 @@ export function isValidEmail(email: string): boolean {
 	return emailRegex.test(email);
 }
 
+// EVP Validation (Random PIX key UUID)
+export function isValidEVP(value: string): boolean {
+	const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+	return uuidRegex.test(value.trim());
+}
+
 // PIX Key Auto-detection
 export function detectPixKeyType(value: string): PixKeyType | null {
 	if (!value) return null;
-	
-	const cleanValue = value.replace(/\s+/g, '');
-	
-	// Check if it's an email
+
+	const cleanValue = value.trim();
+
 	if (isValidEmail(cleanValue)) {
 		return PixKeyType.EMAIL;
 	}
-	
-	// Check if it contains only numbers (could be CPF, CNPJ, or phone)
-	const numbersOnly = cleanValue.replace(/\D/g, '');
-	
-	if (numbersOnly.length === 11) {
-		// Could be CPF or mobile phone
-		// If starts with valid area code, likely phone
-		const areaCode = parseInt(numbersOnly.substring(0, 2));
-		const validAreaCodes = [11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34, 35, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 54, 55, 61, 62, 64, 63, 65, 66, 67, 68, 69, 71, 73, 74, 75, 77, 79, 81, 87, 82, 83, 84, 85, 88, 86, 89, 91, 93, 94, 92, 97, 95, 96, 98, 99];
-		
-		if (validAreaCodes.includes(areaCode) && numbersOnly.charAt(2) === '9') {
-			return PixKeyType.PHONE;
-		} else {
-			return PixKeyType.CPF;
-		}
+
+	if (isValidEVP(cleanValue)) {
+		return PixKeyType.EVP;
 	}
-	
+
+	const numbersOnly = cleanValue.replace(/\D/g, '');
+
+	if ((numbersOnly.length === 12 || numbersOnly.length === 13) && numbersOnly.startsWith('55')) {
+		return PixKeyType.PHONE;
+	}
+
+	if (numbersOnly.length === 11) {
+		const areaCode = Number.parseInt(numbersOnly.substring(0, 2), 10);
+		if (BRAZILIAN_AREA_CODES.includes(areaCode) && numbersOnly.charAt(2) === '9') {
+			return PixKeyType.PHONE;
+		}
+
+		return PixKeyType.CPF;
+	}
+
 	if (numbersOnly.length === 10) {
 		return PixKeyType.PHONE;
 	}
-	
+
 	if (numbersOnly.length === 14) {
 		return PixKeyType.CNPJ;
 	}
-	
+
 	return null;
 }
 
@@ -263,6 +276,8 @@ export function formatPixKey(value: string, type: PixKeyType): string {
 			return formatPhone(value);
 		case PixKeyType.EMAIL:
 			return value.trim().toLowerCase();
+		case PixKeyType.EVP:
+			return value.trim().toLowerCase();
 		default:
 			return value;
 	}
@@ -271,7 +286,7 @@ export function formatPixKey(value: string, type: PixKeyType): string {
 // PIX Key Validation
 export function validatePixKey(value: string, type: PixKeyType): boolean {
 	if (!value) return false;
-	
+
 	switch (type) {
 		case PixKeyType.CPF:
 			return isValidCPF(value);
@@ -281,6 +296,8 @@ export function validatePixKey(value: string, type: PixKeyType): boolean {
 			return isValidPhone(value);
 		case PixKeyType.EMAIL:
 			return isValidEmail(value);
+		case PixKeyType.EVP:
+			return isValidEVP(value);
 		default:
 			return false;
 	}
@@ -297,7 +314,9 @@ export function cleanPixKey(value: string, type: PixKeyType): string {
 			return cleanPhone(value);
 		case PixKeyType.EMAIL:
 			return value.trim().toLowerCase();
+		case PixKeyType.EVP:
+			return value.trim().toLowerCase();
 		default:
 			return value;
 	}
-} 
+}
